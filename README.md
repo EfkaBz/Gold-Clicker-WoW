@@ -1,103 +1,177 @@
-Gold Clicker WoW
-A Complete Idle Clicker Game for World of Warcraft
+# 🪙 Gold Clicker WoW
+### A Complete Idle Clicker Game for World of Warcraft
 
-Gold Clicker WoW transforms your World of Warcraft experience into an addictive idle clicker game! Click to earn gold, hire employees for passive income, loot epic items, and build your virtual gold empire right within the game interface.
+**Gold Clicker WoW** transforms your World of Warcraft experience into an addictive idle clicker game!  
+Click to earn gold, hire employees for passive income, loot epic items, and build your virtual gold empire directly in-game.
 
-🎮 Core Gameplay
+---
 
-Click to Earn: Click the large gold coin to earn gold. Each click's value can be dramatically increased through various upgrades.
+## 🎮 Core Gameplay
 
-Passive Income: Hire employees ranging from Goblin Miners to Ethereal Trade Empires, each generating gold per second automatically.
+- **Click to Earn**  
+  Click the large gold coin to earn gold. Increase click value with upgrades.
 
-Loot System: Every click has a chance to loot valuable items including weapons, armor, consumables, and materials. Items range from common Rusty Swords to ultra-rare Legendary Epic gear!
+- **Passive Income**  
+  Hire employees from *Goblin Miners* to *Ethereal Trade Empires* to generate gold automatically.
 
-🛠️ Upgrade System
+- **Loot System**  
+  Each click can drop items:
+  - Weapons
+  - Armor
+  - Consumables
+  - Materials  
+  Ranging from **Common Rusty Swords** to **Legendary Epic gear**.
 
-Production Employees (10 tiers):
+---
 
-Goblin Miner (0.5 gold/sec)
-Dwarf Blacksmith (2 gold/sec)
-Gold Mine (10 gold/sec)
-Auction House Master (50 gold/sec)
-Guild Bank (300 gold/sec)
-Black Market (1,500 gold/sec)
-Kirin Tor Consortium (7,500 gold/sec)
-Dragon Treasure Guardian (40,000 gold/sec)
-Goblin Cartel (200,000 gold/sec)
-Ethereal Trade Empire (1,000,000 gold/sec)
+## 🛠️ Upgrade System
 
-Click Multipliers (5 tiers):
+### 🏭 Production Employees (10 tiers)
 
-Expert Hands (2x click value)
-Critical Loot (3x click value)
-Titanic Plunder (5x click value)
-Farmer's Rage (10x click value)
-Fortune's Blessing (25x click value)
+- Goblin Miner — 0.5 gold/sec  
+- Dwarf Blacksmith — 2 gold/sec  
+- Gold Mine — 10 gold/sec  
+- Auction House Master — 50 gold/sec  
+- Guild Bank — 300 gold/sec  
+- Black Market — 1,500 gold/sec  
+- Kirin Tor Consortium — 7,500 gold/sec  
+- Dragon Treasure Guardian — 40,000 gold/sec  
+- Goblin Cartel — 200,000 gold/sec  
+- Ethereal Trade Empire — 1,000,000 gold/sec  
 
-Loot Enhancements:
+---
 
-Increased loot chance upgrades
-Automatic looting every 10 seconds (upgradeable to 5 seconds)
-Item value multipliers
-Quality boosters for rare/epic drops
-Double loot chance
-Automatic selling of common items
-🎒 Inventory & Auction House
-Inventory Management: Store and view all looted items with detailed information
-Individual Selling: Sell items one by one or bulk sell everything
-Auction House Integration: "Sell All to AH" functionality
-Item Scaling: Item values increase over time as you play longer
-Quality System: Items have WoW-style quality colors (Common, Uncommon, Rare, Epic)
-📊 Statistics & Progression
-Real-time Stats: Track gold farmed, clicks made, and play time
-Persistent Save: All progress automatically saved
-Reset Function: Start over with a full game reset option
-Strategic Depth: Balance between active clicking and passive income investment
-🎨 User Interface
-WoW-Native Design: Seamlessly integrated with World of Warcraft's UI
-Minimap Button: Easy access with left-click to open/close
-Responsive Layout: Optimized for various screen resolutions
-Visual Feedback: Color-coded buttons, hover tooltips, and smooth animations
-French Localization: Complete French language support
-🔧 Technical Details
-WoW Version: TBC 2.5.5 - Interface 20504
-Dependencies: None required
-Saved Variables: GoldClickerDB (automatically managed)
-Performance: Lightweight and optimized for minimal impact on game performance
-Compatibility: Works with all WoW addons and UI modifications
-📖 How to Play
-Start Clicking: Click the gold coin to begin earning gold
-Build Your Empire: Use gold to hire employees and purchase upgrades
-Loot Items: Higher-tier upgrades increase your chances of valuable loot
-Manage Inventory: Sell items at the auction house to fund further growth
-Strategic Investment: Balance between click multipliers and passive income
-🎯 Perfect For
-Casual Players: Quick gaming sessions within WoW
-Idle Game Fans: Satisfying progression without constant attention
-WoW Enthusiasts: Unique gameplay integrated into the WoW universe
-Achievement Hunters: Unlock all upgrades and reach maximum production
-Gold Farmers: Virtual gold farming simulation with a twist!
-🏆 Features Summary
+### ⚡ Click Multipliers
 
-✅ Complete idle clicker mechanics
-✅ 10 tiers of production employees
-✅ 4-item quality system (Common → Epic)
-✅ 20+ unique upgrades and enhancements
-✅ Full inventory management system
-✅ Automatic looting and selling
-✅ Persistent save system
-✅ French localization
-✅ WoW-native UI integration
-✅ Minimap access button
-✅ Statistics tracking
-✅ Game reset functionality
+- Expert Hands — x2  
+- Critical Loot — x3  
+- Titanic Plunder — x5  
+- Farmer's Rage — x10  
+- Fortune's Blessing — x25  
 
-Ready to build your gold empire? Download Gold Clicker WoW today and start clicking your way to riches! 🪙✨
+---
 
-Author: Daeler
-Version: 1.0
-Last Updated: 2024
-Category: Miscellaneous, Fun, Mini-games
-Required WoW Version: 2.5.5 (TBC)
+### 🎁 Loot Enhancements
 
-This addon is not affiliated with Blizzard Entertainment. World of Warcraft® and Blizzard Entertainment® are trademarks or registered trademarks of Blizzard Entertainment, Inc
+- Increased loot chance  
+- Auto-loot every 10s (upgradeable to 5s)  
+- Item value multipliers  
+- Rare/Epic drop boosters  
+- Double loot chance  
+- Auto-sell common items  
+
+---
+
+## 🎒 Inventory & Auction House
+
+- Full inventory system with detailed item info  
+- Sell items individually or in bulk  
+- Auction House integration (*Sell All to AH*)  
+- Item values scale over time  
+- Quality system:  
+  **Common → Uncommon → Rare → Epic**
+
+---
+
+## 📊 Statistics & Progression
+
+- Track:
+  - Gold earned  
+  - Clicks  
+  - Playtime  
+
+- Automatic save system  
+- Full reset option  
+- Strategic gameplay:
+  balance between clicking and passive income  
+
+---
+
+## 🎨 User Interface
+
+- Native WoW UI integration  
+- Minimap button (open/close with left-click)  
+- Responsive layout  
+- Visual feedback (colors, tooltips, animations)  
+- 🇫🇷 Full French localization  
+
+---
+
+## 🔧 Technical Details
+
+- **WoW Version:** TBC 2.5.5 (Interface 20504)  
+- **Dependencies:** None  
+- **SavedVariables:** `GoldClickerDB`  
+- **Performance:** Lightweight & optimized  
+- **Compatibility:** Works with all addons  
+
+---
+
+## 📖 How to Play
+
+1. Click the gold coin  
+2. Earn gold  
+3. Hire employees  
+4. Buy upgrades  
+5. Loot items  
+6. Sell at Auction House  
+7. Grow your empire  
+
+---
+
+## 🎯 Perfect For
+
+- Casual players  
+- Idle game fans  
+- WoW enthusiasts  
+- Achievement hunters  
+- Gold farming simulation lovers  
+
+---
+
+## 🏆 Features Summary
+
+- ✅ Idle clicker mechanics  
+- ✅ 10 production tiers  
+- ✅ 4-tier item quality system  
+- ✅ 20+ upgrades  
+- ✅ Inventory management  
+- ✅ Auto-loot & auto-sell  
+- ✅ Persistent save  
+- ✅ French localization  
+- ✅ WoW UI integration  
+- ✅ Minimap button  
+- ✅ Statistics tracking  
+- ✅ Game reset system  
+
+---
+
+## 🚀 Ready to Play?
+
+Start building your gold empire and click your way to riches! 🪙✨
+
+---
+
+## 👤 Author
+
+**Daeler**
+
+---
+
+## 📦 Version
+
+- Version: 1.0  
+- Last Updated: 2024  
+
+---
+
+## 📂 Category
+
+Miscellaneous • Fun • Mini-games  
+
+---
+
+## ⚠️ Disclaimer
+
+This addon is not affiliated with Blizzard Entertainment.  
+World of Warcraft® and Blizzard Entertainment® are registered trademarks of Blizzard Entertainment, Inc.
