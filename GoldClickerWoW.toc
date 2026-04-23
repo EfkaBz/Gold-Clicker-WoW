@@ -1,0 +1,11 @@
+## Interface: 20504
+## Title: Gold Clicker WoW
+## Notes: Idle clicker game dans WoW !
+## Author: Daeler
+## Version: 1.0
+## SavedVariables: GoldClickerDB
+
+Core.lua
+Data.lua
+GameLogic.lua
+UI.lua
