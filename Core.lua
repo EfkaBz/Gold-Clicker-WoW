@@ -19,6 +19,10 @@ local function InitDatabase()
             inventory = {}, -- {itemId = count}
             totalLooted = 0,
             startTime = time(),
+            prestigeLevel = 0,
+            prestigePoints = 0,
+            totalPrestiges = 0,
+            achievements = {}, -- {achievementId = true}
         }
     end
     
@@ -29,6 +33,38 @@ local function InitDatabase()
     
     if not GoldClickerDB.totalLooted then
         GoldClickerDB.totalLooted = 0
+    end
+    
+    -- Initialiser le prestige
+    if not GoldClickerDB.prestigeLevel then
+        GoldClickerDB.prestigeLevel = 0
+    end
+    
+    if not GoldClickerDB.prestigePoints then
+        GoldClickerDB.prestigePoints = 0
+    end
+    
+    if not GoldClickerDB.totalPrestiges then
+        GoldClickerDB.totalPrestiges = 0
+    end
+    
+    -- Initialiser les achievements
+    if not GoldClickerDB.achievements then
+        GoldClickerDB.achievements = {}
+    end
+    
+    -- Initialiser les donjons
+    if not GoldClickerDB.lastDungeonTime then
+        GoldClickerDB.lastDungeonTime = nil
+    end
+    
+    if not GoldClickerDB.dungeonsCompleted then
+        GoldClickerDB.dungeonsCompleted = 0
+    end
+    
+    -- Initialiser les upgrades prestige
+    if not GoldClickerDB.prestigeUpgrades then
+        GoldClickerDB.prestigeUpgrades = {}
     end
     
     -- Initialiser les compteurs d'upgrades s'ils n'existent pas
@@ -110,7 +146,7 @@ function GoldClicker:StartAutoProduction()
         end
     end)
     
-    -- Ticker pour le loot automatique (toutes les 10 secondes, ou 5 si amélioré)
+    -- Ticker pour le loot automatique (toutes les 10 secondes, ou 5/3 si amélioré)
     if self.autoLootTicker then
         self.autoLootTicker:Cancel()
     end
@@ -119,6 +155,12 @@ function GoldClicker:StartAutoProduction()
     local fasterAutoLootCount = GoldClickerDB.upgrades["super_auto_loot"] or 0
     if fasterAutoLootCount > 0 then
         autoLootInterval = 5
+    end
+    
+    -- Vérifier l'upgrade prestige "Loot Auto Rapide"
+    local prestigeFastLoot = self:GetPrestigeUpgradeLevel("fast_auto_loot")
+    if prestigeFastLoot > 0 then
+        autoLootInterval = 3
     end
     
     self.autoLootTicker = C_Timer.NewTicker(autoLootInterval, function()
@@ -172,7 +214,16 @@ function GoldClicker:GetGoldPerSecond()
         end
     end
     
-    return total * productionMultiplier
+    -- Appliquer le bonus de prestige (+10% par niveau)
+    local prestigeBonus = 1 + (GoldClickerDB.prestigeLevel * 0.10)
+    
+    -- Appliquer les bonus d'achievements
+    local achievementBonus = 1 + self:GetAchievementBonus("production")
+    
+    -- Appliquer les bonus d'upgrades prestige (Super Production)
+    local prestigeUpgradeBonus = 1 + self:GetPrestigeBonus("production_boost")
+    
+    return total * productionMultiplier * prestigeBonus * achievementBonus * prestigeUpgradeBonus
 end
 
 -- Calculer le coût total pour acheter X upgrades
@@ -216,13 +267,22 @@ function GoldClicker:GetClickValue()
         end
     end
     
-    return value
+    -- Appliquer les bonus d'achievements
+    local achievementBonus = 1 + self:GetAchievementBonus("click")
+    
+    -- Appliquer les bonus d'upgrades prestige (Mega Clic)
+    local prestigeUpgradeBonus = 1 + self:GetPrestigeBonus("click_boost")
+    
+    return value * achievementBonus * prestigeUpgradeBonus
 end
 
 -- Ajouter de l'or
 function GoldClicker:AddGold(amount)
     GoldClickerDB.gold = GoldClickerDB.gold + amount
     GoldClickerDB.totalGold = GoldClickerDB.totalGold + amount
+    
+    -- Vérifier les achievements
+    self:CheckAchievements()
     
     if self.mainFrame and self.mainFrame:IsShown() then
         self:UpdateUI()
@@ -242,6 +302,9 @@ function GoldClicker:GetLootChance()
         end
     end
     
+    -- Ajouter les bonus d'achievements
+    baseChance = baseChance + self:GetAchievementBonus("loot_chance")
+    
     return math.min(baseChance, 0.95) -- Max 95%
 end
 
@@ -257,10 +320,17 @@ function GoldClicker:RollLoot()
         qualityMultiplier = 1.5  -- 50% plus de chance pour les items rares/epic
     end
     
+    -- Appliquer le bonus prestige "Chasseur Epic"
+    local epicBonus = self:GetPrestigeBonus("epic_chance")
+    
     for _, item in ipairs(self.LootTable) do
         local weight = item.weight
         if item.quality == "uncommon" or item.quality == "rare" or item.quality == "epic" then
             weight = weight * qualityMultiplier
+        end
+        -- Bonus spécial pour les Epic
+        if item.quality == "epic" and epicBonus > 0 then
+            weight = weight * (1 + epicBonus)
         end
         totalWeight = totalWeight + weight
     end
@@ -273,6 +343,10 @@ function GoldClicker:RollLoot()
         local weight = item.weight
         if item.quality == "uncommon" or item.quality == "rare" or item.quality == "epic" then
             weight = weight * qualityMultiplier
+        end
+        -- Bonus spécial pour les Epic
+        if item.quality == "epic" and epicBonus > 0 then
+            weight = weight * (1 + epicBonus)
         end
         currentWeight = currentWeight + weight
         if roll <= currentWeight then
@@ -334,4 +408,116 @@ end
 function GoldClicker:Save()
     -- La sauvegarde est automatique avec SavedVariables
     -- Cette fonction peut être utilisée pour des actions supplémentaires
+end
+
+-- Vérifier les achievements
+function GoldClicker:CheckAchievements()
+    local newAchievements = false
+    
+    for _, achievement in ipairs(self.Achievements) do
+        if not GoldClickerDB.achievements[achievement.id] then
+            if achievement.requirement() then
+                GoldClickerDB.achievements[achievement.id] = true
+                newAchievements = true
+                
+                print("|cffFFD700[SUCCES DEBLOQUE] " .. achievement.name .. "!")
+                print("|cff00ff00Recompense: " .. achievement.reward)
+                
+                -- Appliquer la récompense
+                self:ApplyAchievementReward(achievement)
+            end
+        end
+    end
+    
+    return newAchievements
+end
+
+-- Appliquer la récompense d'un achievement
+function GoldClicker:ApplyAchievementReward(achievement)
+    if achievement.rewardType == "prestige_point" then
+        GoldClickerDB.prestigePoints = GoldClickerDB.prestigePoints + achievement.rewardValue
+    end
+    -- Les autres bonus (production, click, loot_chance) sont appliqués dynamiquement
+end
+
+-- Obtenir le bonus total des achievements
+function GoldClicker:GetAchievementBonus(bonusType)
+    local total = 0
+    
+    for _, achievement in ipairs(self.Achievements) do
+        if GoldClickerDB.achievements[achievement.id] and achievement.rewardType == bonusType then
+            total = total + achievement.rewardValue
+        end
+    end
+    
+    return total
+end
+
+-- SYSTÈME UPGRADES PRESTIGE
+
+-- Acheter un upgrade prestige
+function GoldClicker:BuyPrestigeUpgrade(upgradeId)
+    local upgrade = self:GetPrestigeUpgradeData(upgradeId)
+    if not upgrade then
+        print("|cffff0000Upgrade prestige inconnu!")
+        return false
+    end
+    
+    local currentLevel = GoldClickerDB.prestigeUpgrades[upgradeId] or 0
+    
+    -- Vérifier la limite max
+    if upgrade.maxPurchases and currentLevel >= upgrade.maxPurchases then
+        print("|cffff0000Niveau maximum atteint!")
+        return false
+    end
+    
+    -- Vérifier les points
+    if GoldClickerDB.prestigePoints < upgrade.cost then
+        print("|cffff0000Pas assez de points de prestige!")
+        return false
+    end
+    
+    -- Acheter
+    GoldClickerDB.prestigePoints = GoldClickerDB.prestigePoints - upgrade.cost
+    GoldClickerDB.prestigeUpgrades[upgradeId] = currentLevel + 1
+    
+    print("|cff00ff00Upgrade prestige achete: " .. upgrade.name .. " (Niveau " .. (currentLevel + 1) .. ")")
+    
+    -- Mettre à jour l'UI
+    if self.prestigeShopFrame and self.prestigeShopFrame:IsShown() then
+        self:UpdatePrestigeShop()
+    end
+    
+    return true
+end
+
+-- Obtenir les données d'un upgrade prestige
+function GoldClicker:GetPrestigeUpgradeData(upgradeId)
+    for _, upgrade in ipairs(self.PrestigeUpgrades) do
+        if upgrade.id == upgradeId then
+            return upgrade
+        end
+    end
+    return nil
+end
+
+-- Obtenir le niveau d'un upgrade prestige
+function GoldClicker:GetPrestigeUpgradeLevel(upgradeId)
+    return GoldClickerDB.prestigeUpgrades[upgradeId] or 0
+end
+
+-- Obtenir le bonus d'un type d'upgrade prestige
+function GoldClicker:GetPrestigeBonus(bonusType)
+    local total = 0
+    
+    for _, upgrade in ipairs(self.PrestigeUpgrades) do
+        if upgrade.applyOn == bonusType then
+            local level = self:GetPrestigeUpgradeLevel(upgrade.id)
+            if level > 0 then
+                total = total + upgrade.effect(level)
+            end
+        end
+    end
+    
+    return total
 end

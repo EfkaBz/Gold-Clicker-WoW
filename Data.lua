@@ -525,3 +525,215 @@ function GoldClicker:GetUpgradeData(upgradeId)
     end
     return nil
 end
+
+-- Définition des achievements
+GoldClicker.Achievements = {
+    -- Achievements Gold
+    {
+        id = "gold_1k",
+        name = "Premiers Pas",
+        description = "Atteindre 1,000 gold total",
+        icon = "Interface\\Icons\\INV_Misc_Coin_01",
+        requirement = function() return GoldClickerDB.totalGold >= 1000 end,
+        reward = "Production +5%%",
+        rewardType = "production",
+        rewardValue = 0.05,
+    },
+    {
+        id = "gold_1m",
+        name = "Millionnaire",
+        description = "Atteindre 1,000,000 gold total",
+        icon = "Interface\\Icons\\INV_Misc_Coin_02",
+        requirement = function() return GoldClickerDB.totalGold >= 1000000 end,
+        reward = "Production +10%%",
+        rewardType = "production",
+        rewardValue = 0.10,
+    },
+    {
+        id = "gold_1b",
+        name = "Milliardaire",
+        description = "Atteindre 1,000,000,000 gold total",
+        icon = "Interface\\Icons\\INV_Ingot_05",
+        requirement = function() return GoldClickerDB.totalGold >= 1000000000 end,
+        reward = "Production +25%%",
+        rewardType = "production",
+        rewardValue = 0.25,
+    },
+    
+    -- Achievements Clics
+    {
+        id = "clicks_100",
+        name = "Clicker Debutant",
+        description = "Cliquer 100 fois",
+        icon = "Interface\\Icons\\Ability_Warrior_DecisiveStrike",
+        requirement = function() return GoldClickerDB.totalClicks >= 100 end,
+        reward = "Clic +10%%",
+        rewardType = "click",
+        rewardValue = 0.10,
+    },
+    {
+        id = "clicks_1k",
+        name = "Clicker Pro",
+        description = "Cliquer 1,000 fois",
+        icon = "Interface\\Icons\\Ability_Warrior_Rampage",
+        requirement = function() return GoldClickerDB.totalClicks >= 1000 end,
+        reward = "Clic +20%%",
+        rewardType = "click",
+        rewardValue = 0.20,
+    },
+    {
+        id = "clicks_10k",
+        name = "Addiction",
+        description = "Cliquer 10,000 fois",
+        icon = "Interface\\Icons\\Spell_Holy_InnerFire",
+        requirement = function() return GoldClickerDB.totalClicks >= 10000 end,
+        reward = "Clic +50%%",
+        rewardType = "click",
+        rewardValue = 0.50,
+    },
+    
+    -- Achievements Loot
+    {
+        id = "loot_10",
+        name = "Pilleur Amateur",
+        description = "Looter 10 items",
+        icon = "Interface\\Icons\\INV_Misc_Bag_10_Green",
+        requirement = function() return GoldClickerDB.totalLooted >= 10 end,
+        reward = "Loot +5%% chance",
+        rewardType = "loot_chance",
+        rewardValue = 0.05,
+    },
+    {
+        id = "loot_100",
+        name = "Chasseur de Tresor",
+        description = "Looter 100 items",
+        icon = "Interface\\Icons\\INV_Misc_Bag_17",
+        requirement = function() return GoldClickerDB.totalLooted >= 100 end,
+        reward = "Loot +10%% chance",
+        rewardType = "loot_chance",
+        rewardValue = 0.10,
+    },
+    
+    -- Achievements Employés
+    {
+        id = "goblin_10",
+        name = "Patron Gobelin",
+        description = "Posseder 10 Gobelins Mineurs",
+        icon = "Interface\\Icons\\INV_Misc_Coin_01",
+        requirement = function() return (GoldClickerDB.upgrades["goblin"] or 0) >= 10 end,
+        reward = "Production +10%%",
+        rewardType = "production",
+        rewardValue = 0.10,
+    },
+    
+    -- Achievements Temps de jeu
+    {
+        id = "playtime_1h",
+        name = "Marathonien",
+        description = "Jouer pendant 1 heure",
+        icon = "Interface\\Icons\\INV_Misc_PocketWatch_01",
+        requirement = function() return (time() - GoldClickerDB.startTime) >= 3600 end,
+        reward = "Production +5%%",
+        rewardType = "production",
+        rewardValue = 0.05,
+    },
+    
+    -- Achievements Prestige
+    {
+        id = "prestige_1",
+        name = "Renaissance",
+        description = "Effectuer votre premier Prestige",
+        icon = "Interface\\Icons\\Spell_Holy_GreaterHeal",
+        requirement = function() return (GoldClickerDB.totalPrestiges or 0) >= 1 end,
+        reward = "+1 Point Prestige",
+        rewardType = "prestige_point",
+        rewardValue = 1,
+    },
+}
+
+-- Upgrades Prestige (améliorations permanentes)
+GoldClicker.PrestigeUpgrades = {
+    {
+        id = "quick_start",
+        name = "Depart Rapide",
+        description = "Commence chaque prestige avec 10,000 gold",
+        icon = "Interface\\Icons\\Inv_boots_plate_03",
+        cost = 3,
+        maxPurchases = 5,
+        effect = function(level)
+            return 10000 * level  -- 10k par niveau
+        end,
+        applyOn = "prestige_start",  -- S'applique au début du prestige
+    },
+    {
+        id = "dungeon_speed",
+        name = "Donjon Express",
+        description = "Reduit le cooldown des donjons de 5 minutes",
+        icon = "Interface\\Icons\\inv_gizmo_newgoggles",
+        cost = 5,
+        maxPurchases = 6,
+        effect = function(level)
+            return level * 300  -- 5 minutes = 300 secondes par niveau
+        end,
+        applyOn = "dungeon_cooldown",
+    },
+    {
+        id = "epic_hunter",
+        name = "Chasseur Epic",
+        description = "Augmente la chance de loot Epic de 5%",
+        icon = "Interface\\Icons\\INV_Misc_Gem_Variety_01",
+        cost = 10,
+        maxPurchases = 3,
+        effect = function(level)
+            return level * 0.05  -- +5% par niveau
+        end,
+        applyOn = "epic_chance",
+    },
+    {
+        id = "super_production",
+        name = "Super Production",
+        description = "Augmente la production de base de 50%",
+        icon = "Interface\\Icons\\INV_Misc_Gear_01",
+        cost = 15,
+        maxPurchases = nil,  -- Infini
+        effect = function(level)
+            return level * 0.5  -- +50% par niveau
+        end,
+        applyOn = "production_boost",
+    },
+    {
+        id = "mega_click",
+        name = "Mega Clic",
+        description = "Augmente la valeur des clics de 100%",
+        icon = "Interface\\Icons\\INV_Gauntlets_28",
+        cost = 8,
+        maxPurchases = nil,  -- Infini
+        effect = function(level)
+            return level * 1.0  -- +100% par niveau
+        end,
+        applyOn = "click_boost",
+    },
+    {
+        id = "fast_auto_loot",
+        name = "Loot Auto Rapide",
+        description = "Loot automatique toutes les 3s au lieu de 5s",
+        icon = "Interface\\Icons\\INV_Misc_Bag_10",
+        cost = 5,
+        maxPurchases = 1,
+        effect = function(level)
+            return 3  -- 3 secondes
+        end,
+        applyOn = "auto_loot_speed",
+    },
+}
+
+-- Fonction pour obtenir les données brutes d'un item (sans scaling, pour achievements)
+function GoldClicker:GetItemDataRaw(itemId)
+    for _, item in ipairs(self.LootTable) do
+        if item.id == itemId then
+            return item
+        end
+    end
+    return nil
+end
+

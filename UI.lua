@@ -54,7 +54,7 @@ end
 -- Créer l'interface principale
 function GoldClicker:CreateUI()
     local frame = CreateFrame("Frame", "GoldClickerFrame", UIParent)
-    frame:SetSize(750, 620)
+    frame:SetSize(750, 660)
     frame:SetPoint("CENTER", 0, 0)
     
     -- Fond simple
@@ -100,10 +100,15 @@ function GoldClicker:CreateUI()
     
     self.mainFrame = frame
     
+
+    
     -- Bouton de fermeture
     local closeBtn = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
     closeBtn:SetPoint("TOPRIGHT", -5, -5)
     closeBtn:SetSize(32, 32)
+    closeBtn:SetScript("OnClick", function()
+        frame:Hide()
+    end)
     
     -- Titre
     local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
@@ -112,6 +117,7 @@ function GoldClicker:CreateUI()
     title:SetTextColor(1, 0.9, 0.3)
     title:SetShadowOffset(3, -3)
     title:SetShadowColor(0, 0, 0, 1)
+    self.titleText = title
     
     self:CreateGoldButton(frame)
     self:CreateActionButtons(frame)
@@ -216,7 +222,7 @@ function GoldClicker:CreateActionButtons(parent)
     -- Bouton Inventaire
     local invBtn = CreateFrame("Button", nil, parent)
     invBtn:SetSize(135, 38)
-    invBtn:SetPoint("BOTTOM", -145, 95)
+    invBtn:SetPoint("BOTTOM", -290, 130)
     
     local invNormal = invBtn:CreateTexture(nil, "BACKGROUND")
     invNormal:SetAllPoints()
@@ -270,26 +276,144 @@ function GoldClicker:CreateActionButtons(parent)
     resetText:SetTextColor(1, 0.82, 0)
     
     resetBtn:SetScript("OnClick", function()
-        StaticPopupDialogs["GOLDCLICKER_RESET"] = {
-            text = "Voulez-vous vraiment tout réinitialiser ?\n\n|cffff0000Vous perdrez:|r\n- Tout votre gold\n- Tous vos upgrades\n- Tout votre inventaire\n- Toutes vos statistiques",
-            button1 = "Oui, Reset !",
-            button2 = "Annuler",
-            OnAccept = function() GoldClicker:Reset() end,
+        StaticPopupDialogs["GOLDCLICKER_RESET_CHOICE"] = {
+            text = "|cffFFD700Quel type de reset voulez-vous ?|r\n\n|cff00ff00Garder Prestige:|r\nReset tout SAUF votre niveau de prestige, succes et ameliorations permanentes\n\n|cffff0000Reset Total:|r\nTOUT remettre a zero (prestige, succes et ameliorations permanentes inclus)",
+            button1 = "Garder Prestige",
+            button2 = "Reset Total",
+            button3 = "Annuler",
+            OnAccept = function() 
+                GoldClicker:Reset() -- Reset normal (garde le prestige et succès)
+            end,
+            OnCancel = function()
+                -- Reset TOTAL (prestige et succès inclus)
+                StaticPopupDialogs["GOLDCLICKER_RESET_CONFIRM"] = {
+                    text = "|cffff0000ATTENTION !|r\n\nVous allez TOUT perdre :\n- Tout votre gold\n- Tous vos employes\n- Toutes vos ameliorations\n- Tout votre inventaire\n- |cffff0000TOUS VOS PRESTIGES|r\n- |cffff0000TOUS VOS SUCCES|r\n- |cffff0000TOUTES LES AMELIORATIONS PERMANENTES|r\n\nC'est IRREVERSIBLE !",
+                    button1 = "OUI, TOUT RESET",
+                    button2 = "Annuler",
+                    OnAccept = function()
+                        GoldClicker:ResetFull()
+                    end,
+                    timeout = 0,
+                    whileDead = true,
+                    hideOnEscape = true,
+                    preferredIndex = 3,
+                }
+                StaticPopup_Show("GOLDCLICKER_RESET_CONFIRM")
+            end,
             timeout = 0,
             whileDead = true,
             hideOnEscape = true,
             preferredIndex = 3,
         }
-        StaticPopup_Show("GOLDCLICKER_RESET")
+        StaticPopup_Show("GOLDCLICKER_RESET_CHOICE")
     end)
     
     resetBtn:EnableMouse(true)
     resetBtn:RegisterForClicks("LeftButtonUp")
+    
+    -- Bouton Prestige
+    local prestigeBtn = CreateFrame("Button", nil, parent)
+    prestigeBtn:SetSize(135, 38)
+    prestigeBtn:SetPoint("LEFT", resetBtn, "RIGHT", 10, 0)
+    
+    local prestigeNormal = prestigeBtn:CreateTexture(nil, "BACKGROUND")
+    prestigeNormal:SetAllPoints()
+    prestigeNormal:SetTexture("Interface\\Buttons\\UI-Panel-Button-Up")
+    prestigeNormal:SetTexCoord(0, 0.625, 0, 0.6875)
+    
+    local prestigeHighlight = prestigeBtn:CreateTexture(nil, "HIGHLIGHT")
+    prestigeHighlight:SetAllPoints()
+    prestigeHighlight:SetTexture("Interface\\Buttons\\UI-Panel-Button-Highlight")
+    prestigeHighlight:SetTexCoord(0, 0.625, 0, 0.6875)
+    prestigeHighlight:SetBlendMode("ADD")
+    
+    local prestigeIcon = prestigeBtn:CreateTexture(nil, "ARTWORK")
+    prestigeIcon:SetSize(26, 26)
+    prestigeIcon:SetPoint("LEFT", 8, 0)
+    prestigeIcon:SetTexture("Interface\\Icons\\Spell_Holy_GreaterHeal")  
+    local prestigeText = prestigeBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    prestigeText:SetPoint("LEFT", prestigeIcon, "RIGHT", 8, 0)
+    prestigeText:SetText("Prestige")
+    prestigeText:SetTextColor(1, 0.82, 0)
+    
+    prestigeBtn:SetScript("OnClick", function()
+        if GoldClicker:CanPrestige() then
+            local pointsGained = GoldClicker:CalculatePrestigePoints()
+            StaticPopupDialogs["GOLDCLICKER_PRESTIGE"] = {
+                text = "|cffFFD700PRESTIGE|r\n\nVous allez gagner:\n\n|cff00ff00+" .. pointsGained .. " Points de Prestige|r\n|cff00ff00+" .. ((GoldClickerDB.prestigeLevel + 1) * 10) .. "%% production permanente|r\n\n|cffff0000Vous perdrez tout:|r\nGold, employes, ameliorations, inventaire",
+                button1 = "PRESTIGE !",
+                button2 = "Annuler",
+                OnAccept = function() GoldClicker:DoPrestige() end,
+                timeout = 0,
+                whileDead = true,
+                hideOnEscape = true,
+                preferredIndex = 3,
+            }
+            StaticPopup_Show("GOLDCLICKER_PRESTIGE")
+        else
+            print("|cffff0000Vous avez besoin de 1 milliard de gold total pour faire un Prestige!")
+        end
+    end)
+    
+    prestigeBtn:SetScript("OnEnter", function()
+        GameTooltip:SetOwner(prestigeBtn, "ANCHOR_RIGHT")
+        if GoldClicker:CanPrestige() then
+            local points = GoldClicker:CalculatePrestigePoints()
+            GameTooltip:SetText("|cffFFD700PRESTIGE DISPONIBLE|r", 1, 1, 1)
+            GameTooltip:AddLine(" ")
+            GameTooltip:AddLine("Points gagnes: |cff00ff00" .. points .. "|r", 1, 1, 1)
+            GameTooltip:AddLine("Nouveau bonus: |cff00ff00+" .. ((GoldClickerDB.prestigeLevel + 1) * 10) .. "%% production|r", 1, 1, 1)
+        else
+            GameTooltip:SetText("Prestige", 1, 0.9, 0.3)
+            GameTooltip:AddLine(" ")
+            GameTooltip:AddLine("|cffff0000Requis: 1,000,000,000 gold total|r", 1, 1, 1)
+            GameTooltip:AddLine("Actuel: " .. GoldClicker:FormatNumber(GoldClickerDB.totalGold), 0.8, 0.8, 0.8)
+        end
+        GameTooltip:Show()
+    end)
+    
+    prestigeBtn:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    
+    prestigeBtn:EnableMouse(true)
+    prestigeBtn:RegisterForClicks("LeftButtonUp")
+    self.prestigeButton = prestigeBtn
+    
+    -- Bouton Succès
+    local achievementBtn = CreateFrame("Button", nil, parent)
+    achievementBtn:SetSize(135, 38)
+    achievementBtn:SetPoint("LEFT", prestigeBtn, "RIGHT", 10, 0)
+    
+    local achievementNormal = achievementBtn:CreateTexture(nil, "BACKGROUND")
+    achievementNormal:SetAllPoints()
+    achievementNormal:SetTexture("Interface\\Buttons\\UI-Panel-Button-Up")
+    achievementNormal:SetTexCoord(0, 0.625, 0, 0.6875)
+    
+    local achievementHighlight = achievementBtn:CreateTexture(nil, "HIGHLIGHT")
+    achievementHighlight:SetAllPoints()
+    achievementHighlight:SetTexture("Interface\\Buttons\\UI-Panel-Button-Highlight")
+    achievementHighlight:SetTexCoord(0, 0.625, 0, 0.6875)
+    achievementHighlight:SetBlendMode("ADD")
+    
+    local achievementIcon = achievementBtn:CreateTexture(nil, "ARTWORK")
+    achievementIcon:SetSize(26, 26)
+    achievementIcon:SetPoint("LEFT", 8, 0)
+    achievementIcon:SetTexture("Interface\\Icons\\Spell_Arcane_StarFire")
+    
+    local achievementText = achievementBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    achievementText:SetPoint("LEFT", achievementIcon, "RIGHT", 8, 0)
+    achievementText:SetText("Succes")
+    achievementText:SetTextColor(1, 0.82, 0)
+    
+    achievementBtn:SetScript("OnClick", function() self:ToggleAchievements() end)
+    achievementBtn:EnableMouse(true)
+    achievementBtn:RegisterForClicks("LeftButtonUp")
 
     -- Bouton Règles du jeu
     local rulesBtn = CreateFrame("Button", nil, parent)
     rulesBtn:SetSize(135, 38)
-    rulesBtn:SetPoint("LEFT", resetBtn, "RIGHT", 10, 0)
+    rulesBtn:SetPoint("LEFT", achievementBtn, "RIGHT", 10, 0)
 
     local rulesNormal = rulesBtn:CreateTexture(nil, "BACKGROUND")
     rulesNormal:SetAllPoints()
@@ -315,6 +439,114 @@ function GoldClicker:CreateActionButtons(parent)
     rulesBtn:SetScript("OnClick", function() self:ShowGameRules() end)
     rulesBtn:EnableMouse(true)
     rulesBtn:RegisterForClicks("LeftButtonUp")
+    
+    -- DEUXIÈME LIGNE DE BOUTONS
+    
+    -- Bouton Donjon/Raid
+    local dungeonBtn = CreateFrame("Button", nil, parent)
+    dungeonBtn:SetSize(135, 38)
+    dungeonBtn:SetPoint("BOTTOM", -290, 90)  -- Même X que invBtn, mais Y plus bas
+    
+    local dungeonNormal = dungeonBtn:CreateTexture(nil, "BACKGROUND")
+    dungeonNormal:SetAllPoints()
+    dungeonNormal:SetTexture("Interface\\Buttons\\UI-Panel-Button-Up")
+    dungeonNormal:SetTexCoord(0, 0.625, 0, 0.6875)
+    
+    local dungeonHighlight = dungeonBtn:CreateTexture(nil, "HIGHLIGHT")
+    dungeonHighlight:SetAllPoints()
+    dungeonHighlight:SetTexture("Interface\\Buttons\\UI-Panel-Button-Highlight")
+    dungeonHighlight:SetTexCoord(0, 0.625, 0, 0.6875)
+    dungeonHighlight:SetBlendMode("ADD")
+    
+    local dungeonIcon = dungeonBtn:CreateTexture(nil, "ARTWORK")
+    dungeonIcon:SetSize(26, 26)
+    dungeonIcon:SetPoint("LEFT", 8, 0)
+    dungeonIcon:SetTexture("Interface\\Icons\\INV_Misc_Key_03")
+    
+    local dungeonText = dungeonBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    dungeonText:SetPoint("LEFT", dungeonIcon, "RIGHT", 8, 0)
+    dungeonText:SetText("Donjon")
+    dungeonText:SetTextColor(1, 0.82, 0)
+    
+    dungeonBtn:SetScript("OnClick", function() self:StartDungeon() end)
+    dungeonBtn:SetScript("OnEnter", function()
+        GameTooltip:SetOwner(dungeonBtn, "ANCHOR_RIGHT")
+        
+        if self:CanStartDungeon() then
+            GameTooltip:SetText("|cffFFD700LANCER UN DONJON|r", 1, 1, 1)
+            GameTooltip:AddLine(" ")
+            GameTooltip:AddLine("Cout: 10,000 gold", 1, 1, 1)
+            GameTooltip:AddLine("Recompenses:", 0, 1, 0)
+            GameTooltip:AddLine("- Gold bonus (variable)", 1, 1, 1)
+            GameTooltip:AddLine("- Items rares garantis", 1, 1, 1)
+        else
+            local cooldownRemaining = self:GetDungeonCooldown()
+            if cooldownRemaining > 0 then
+                local mins = math.floor(cooldownRemaining / 60)
+                local secs = cooldownRemaining % 60
+                GameTooltip:SetText("Donjon", 1, 0.9, 0.3)
+                GameTooltip:AddLine(" ")
+                GameTooltip:AddLine("|cffff0000Cooldown: " .. mins .. "m " .. secs .. "s|r", 1, 1, 1)
+            else
+                GameTooltip:SetText("Donjon", 1, 0.9, 0.3)
+                GameTooltip:AddLine(" ")
+                GameTooltip:AddLine("|cffff0000Requis: 10,000 gold|r", 1, 1, 1)
+            end
+        end
+        GameTooltip:Show()
+    end)
+    
+    dungeonBtn:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    
+    dungeonBtn:EnableMouse(true)
+    dungeonBtn:RegisterForClicks("LeftButtonUp")
+    self.dungeonButton = dungeonBtn
+    
+    -- Bouton Boutique Prestige
+    local shopBtn = CreateFrame("Button", nil, parent)
+    shopBtn:SetSize(135, 38)
+    shopBtn:SetPoint("LEFT", dungeonBtn, "RIGHT", 10, 0)
+    
+    local shopNormal = shopBtn:CreateTexture(nil, "BACKGROUND")
+    shopNormal:SetAllPoints()
+    shopNormal:SetTexture("Interface\\Buttons\\UI-Panel-Button-Up")
+    shopNormal:SetTexCoord(0, 0.625, 0, 0.6875)
+    
+    local shopHighlight = shopBtn:CreateTexture(nil, "HIGHLIGHT")
+    shopHighlight:SetAllPoints()
+    shopHighlight:SetTexture("Interface\\Buttons\\UI-Panel-Button-Highlight")
+    shopHighlight:SetTexCoord(0, 0.625, 0, 0.6875)
+    shopHighlight:SetBlendMode("ADD")
+    
+    local shopIcon = shopBtn:CreateTexture(nil, "ARTWORK")
+    shopIcon:SetSize(26, 26)
+    shopIcon:SetPoint("LEFT", 8, 0)
+    shopIcon:SetTexture("Interface\\Icons\\INV_Misc_Gem_Diamond_03")
+    
+    local shopText = shopBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    shopText:SetPoint("LEFT", shopIcon, "RIGHT", 8, 0)
+    shopText:SetText("Boutique")
+    shopText:SetTextColor(1, 0.82, 0)
+    
+    shopBtn:SetScript("OnClick", function() self:TogglePrestigeShop() end)
+    shopBtn:SetScript("OnEnter", function()
+        GameTooltip:SetOwner(shopBtn, "ANCHOR_RIGHT")
+        GameTooltip:SetText("|cffFFD700BOUTIQUE PRESTIGE|r", 1, 1, 1)
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine("Points disponibles: |cff00ff00" .. (GoldClickerDB.prestigePoints or 0) .. "|r", 1, 1, 1)
+        GameTooltip:AddLine("Ameliorations permanentes", 0.8, 0.8, 0.8)
+        GameTooltip:Show()
+    end)
+    
+    shopBtn:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    
+    shopBtn:EnableMouse(true)
+    shopBtn:RegisterForClicks("LeftButtonUp")
+    self.shopButton = shopBtn
 end
 
 function GoldClicker:ShowGameRules()
@@ -586,6 +818,16 @@ end
 function GoldClicker:UpdateUI()
     if not self.mainFrame or not self.mainFrame:IsShown() then return end
     
+    -- Mettre à jour le titre avec le prestige
+    if self.titleText then
+        local stars = string.rep("*", GoldClickerDB.prestigeLevel)
+        if GoldClickerDB.prestigeLevel > 0 then
+            self.titleText:SetText(self:GetLocalizedText("Gold Clicker WoW ") .. stars)
+        else
+            self.titleText:SetText(self:GetLocalizedText("Gold Clicker WoW"))
+        end
+    end
+    
     local gold = math.floor(GoldClickerDB.gold)
     self.goldCountText:SetText(self:FormatNumber(gold))
     
@@ -632,8 +874,14 @@ end
     local hours = math.floor(playTime / 3600)
     local mins = math.floor((playTime % 3600) / 60)
     
+    -- Bonus prestige
+    local prestigeBonus = ""
+    if GoldClickerDB.prestigeLevel > 0 then
+        prestigeBonus = " | Prestige: +" .. (GoldClickerDB.prestigeLevel * 10) .. "%%"
+    end
+    
     self.statsText:SetText(string.format(
-        self:GetLocalizedText("Total farmé: ") .. "%s gold | " .. self:GetLocalizedText("Clics: ") .. "%s | " .. self:GetLocalizedText("Temps de jeu: ") .. "%dh%dm",
+        self:GetLocalizedText("Total farmé: ") .. "%s gold | " .. self:GetLocalizedText("Clics: ") .. "%s | " .. self:GetLocalizedText("Temps de jeu: ") .. "%dh%dm" .. prestigeBonus,
         self:FormatNumber(math.floor(GoldClickerDB.totalGold)),
         self:FormatNumber(GoldClickerDB.totalClicks),
         hours, mins
@@ -974,5 +1222,434 @@ function GoldClicker:ToggleMainFrame()
     else
         self.mainFrame:Show()
         self:UpdateUI()
+    end
+end
+
+-- Toggle la fenêtre des achievements
+function GoldClicker:ToggleAchievements()
+    if not self.achievementFrame then
+        self:CreateAchievementFrame()
+    end
+    
+    if self.achievementFrame:IsShown() then
+        self.achievementFrame:Hide()
+    else
+        self.achievementFrame:Show()
+        self:UpdateAchievements()
+    end
+end
+
+-- Toggle la fenêtre de la boutique prestige
+function GoldClicker:TogglePrestigeShop()
+    if not self.prestigeShopFrame then
+        self:CreatePrestigeShopFrame()
+    end
+    
+    if self.prestigeShopFrame:IsShown() then
+        self.prestigeShopFrame:Hide()
+    else
+        self.prestigeShopFrame:Show()
+        self:UpdatePrestigeShop()
+    end
+end
+
+-- Créer la fenêtre des achievements
+function GoldClicker:CreateAchievementFrame()
+    local frame = CreateFrame("Frame", nil, UIParent)
+    frame:SetSize(520, 620)
+    frame:SetPoint("LEFT", self.mainFrame, "RIGHT", 15, 0)
+    
+    local bg = frame:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(0.05, 0.05, 0.05, 0.95)
+    
+    local borderSize = 3
+    
+    local topBorder = frame:CreateTexture(nil, "BORDER")
+    topBorder:SetPoint("TOPLEFT", 0, 0)
+    topBorder:SetPoint("TOPRIGHT", 0, 0)
+    topBorder:SetHeight(borderSize)
+    topBorder:SetColorTexture(0.18, 0.18, 0.18, 1)
+    
+    local bottomBorder = frame:CreateTexture(nil, "BORDER")
+    bottomBorder:SetPoint("BOTTOMLEFT", 0, 0)
+    bottomBorder:SetPoint("BOTTOMRIGHT", 0, 0)
+    bottomBorder:SetHeight(borderSize)
+    bottomBorder:SetColorTexture(0.18, 0.18, 0.18, 1)
+    
+    local leftBorder = frame:CreateTexture(nil, "BORDER")
+    leftBorder:SetPoint("TOPLEFT", 0, 0)
+    leftBorder:SetPoint("BOTTOMLEFT", 0, 0)
+    leftBorder:SetWidth(borderSize)
+    leftBorder:SetColorTexture(0.18, 0.18, 0.18, 1)
+    
+    local rightBorder = frame:CreateTexture(nil, "BORDER")
+    rightBorder:SetPoint("TOPRIGHT", 0, 0)
+    rightBorder:SetPoint("BOTTOMRIGHT", 0, 0)
+    rightBorder:SetWidth(borderSize)
+    rightBorder:SetColorTexture(0.18, 0.18, 0.18, 1)
+    
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", frame.StartMoving)
+    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+    frame:SetFrameStrata("HIGH")
+    frame:SetToplevel(true)
+    frame:Hide()
+    
+    -- Titre
+    local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOP", 0, -20)
+    title:SetText("|cffFFD700SUCCES|r")
+    title:SetTextColor(1, 0.9, 0.3)
+    title:SetShadowOffset(2, -2)
+    
+    -- Bouton fermer (UN SEUL !)
+    local closeBtn = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
+    closeBtn:SetPoint("TOPRIGHT", -5, -5)
+    
+    -- Stats globaux
+    local statsText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    statsText:SetPoint("TOP", 0, -50)
+    statsText:SetTextColor(0.9, 0.9, 0.9)
+    frame.statsText = statsText
+    
+    -- ScrollFrame pour la liste
+    local scrollFrame = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", 20, -80)
+    scrollFrame:SetPoint("BOTTOMRIGHT", -40, 20)
+    
+    local scrollChild = CreateFrame("Frame", nil, scrollFrame)
+    scrollChild:SetSize(440, 1)
+    scrollFrame:SetScrollChild(scrollChild)
+    
+    frame.scrollChild = scrollChild
+    frame.achievementButtons = {}
+    
+    self.achievementFrame = frame
+    self:PopulateAchievements()
+end
+
+-- Remplir la liste des achievements
+function GoldClicker:PopulateAchievements()
+    local scrollChild = self.achievementFrame.scrollChild
+    local yOffset = 0
+    local buttonHeight = 70
+    
+    for i, achievement in ipairs(self.Achievements) do
+        local btn = CreateFrame("Frame", nil, scrollChild)
+        btn:SetSize(420, buttonHeight)
+        btn:SetPoint("TOPLEFT", 10, yOffset)
+        
+        -- Background
+        local bg = btn:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints()
+        
+        local isUnlocked = GoldClickerDB.achievements[achievement.id]
+        if isUnlocked then
+            bg:SetTexture(0, 0.3, 0, 0.3)  -- Vert foncé
+        else
+            bg:SetTexture(0.1, 0.1, 0.1, 0.3)  -- Gris foncé
+        end
+        
+        -- Icône
+        local icon = btn:CreateTexture(nil, "ARTWORK")
+        icon:SetSize(50, 50)
+        icon:SetPoint("LEFT", 10, 0)
+        icon:SetTexture(achievement.icon)
+        
+        if not isUnlocked then
+            icon:SetDesaturated(true)
+            icon:SetAlpha(0.5)
+        end
+        
+        -- Nom
+        local nameText = btn:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        nameText:SetPoint("TOPLEFT", icon, "TOPRIGHT", 10, -5)
+        nameText:SetText(achievement.name)
+        
+        if isUnlocked then
+            nameText:SetTextColor(0, 1, 0)  -- Vert
+        else
+            nameText:SetTextColor(0.5, 0.5, 0.5)  -- Gris
+        end
+        
+        -- Description
+        local descText = btn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        descText:SetPoint("TOPLEFT", nameText, "BOTTOMLEFT", 0, -3)
+        descText:SetPoint("RIGHT", btn, "RIGHT", -10, 0)
+        descText:SetJustifyH("LEFT")
+        descText:SetText(achievement.description)
+        descText:SetTextColor(0.8, 0.8, 0.8)
+        
+        -- Récompense
+        local rewardText = btn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        rewardText:SetPoint("BOTTOMLEFT", icon, "BOTTOMRIGHT", 10, 5)
+        rewardText:SetText("|cffFFD700" .. achievement.reward .. "|r")
+        
+        -- Checkmark si débloqué
+        if isUnlocked then
+            local check = btn:CreateTexture(nil, "OVERLAY")
+            check:SetSize(24, 24)
+            check:SetPoint("TOPRIGHT", -5, -5)
+            check:SetTexture("Interface\\RaidFrame\\ReadyCheck-Ready")
+        end
+        
+        btn.bg = bg
+        btn.icon = icon
+        btn.nameText = nameText
+        btn.achievementId = achievement.id
+        
+        self.achievementFrame.achievementButtons[i] = btn
+        yOffset = yOffset - buttonHeight - 5
+    end
+    
+    scrollChild:SetHeight(math.abs(yOffset))
+end
+
+-- Mettre à jour l'affichage des achievements
+function GoldClicker:UpdateAchievements()
+    if not self.achievementFrame or not self.achievementFrame:IsShown() then return end
+    
+    -- Compter les achievements débloqués
+    local unlockedCount = 0
+    for _, achievement in ipairs(self.Achievements) do
+        if GoldClickerDB.achievements[achievement.id] then
+            unlockedCount = unlockedCount + 1
+        end
+    end
+    
+    self.achievementFrame.statsText:SetText(string.format(
+        "Debloques: %d / %d",
+        unlockedCount,
+        #self.Achievements
+    ))
+    
+    -- Mettre à jour chaque achievement
+    for i, btn in ipairs(self.achievementFrame.achievementButtons) do
+        local achievement = self.Achievements[i]
+        local isUnlocked = GoldClickerDB.achievements[achievement.id]
+        
+        if isUnlocked then
+            btn.bg:SetTexture(0, 0.3, 0, 0.3)
+            btn.icon:SetDesaturated(false)
+            btn.icon:SetAlpha(1)
+            btn.nameText:SetTextColor(0, 1, 0)
+        else
+            btn.bg:SetTexture(0.1, 0.1, 0.1, 0.3)
+            btn.icon:SetDesaturated(true)
+            btn.icon:SetAlpha(0.5)
+            btn.nameText:SetTextColor(0.5, 0.5, 0.5)
+        end
+    end
+end
+
+-- Créer la fenêtre de la boutique prestige
+function GoldClicker:CreatePrestigeShopFrame()
+    local frame = CreateFrame("Frame", nil, UIParent)
+    frame:SetSize(520, 620)
+    frame:SetPoint("LEFT", self.mainFrame, "RIGHT", 15, 0)
+    
+    local bg = frame:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(0.05, 0.05, 0.05, 0.95)
+    
+    local borderSize = 3
+    
+    local topBorder = frame:CreateTexture(nil, "BORDER")
+    topBorder:SetPoint("TOPLEFT", 0, 0)
+    topBorder:SetPoint("TOPRIGHT", 0, 0)
+    topBorder:SetHeight(borderSize)
+    topBorder:SetColorTexture(0.18, 0.18, 0.18, 1)
+    
+    local bottomBorder = frame:CreateTexture(nil, "BORDER")
+    bottomBorder:SetPoint("BOTTOMLEFT", 0, 0)
+    bottomBorder:SetPoint("BOTTOMRIGHT", 0, 0)
+    bottomBorder:SetHeight(borderSize)
+    bottomBorder:SetColorTexture(0.18, 0.18, 0.18, 1)
+    
+    local leftBorder = frame:CreateTexture(nil, "BORDER")
+    leftBorder:SetPoint("TOPLEFT", 0, 0)
+    leftBorder:SetPoint("BOTTOMLEFT", 0, 0)
+    leftBorder:SetWidth(borderSize)
+    leftBorder:SetColorTexture(0.18, 0.18, 0.18, 1)
+    
+    local rightBorder = frame:CreateTexture(nil, "BORDER")
+    rightBorder:SetPoint("TOPRIGHT", 0, 0)
+    rightBorder:SetPoint("BOTTOMRIGHT", 0, 0)
+    rightBorder:SetWidth(borderSize)
+    rightBorder:SetColorTexture(0.18, 0.18, 0.18, 1)
+    
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", frame.StartMoving)
+    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+    frame:SetFrameStrata("HIGH")
+    frame:SetToplevel(true)
+    frame:Hide()
+    
+    -- Titre
+    local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOP", 0, -20)
+    title:SetText("|cffFFD700BOUTIQUE PRESTIGE|r")
+    title:SetTextColor(1, 0.9, 0.3)
+    title:SetShadowOffset(2, -2)
+    
+    -- Bouton fermer
+    local closeBtn = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
+    closeBtn:SetPoint("TOPRIGHT", -5, -5)
+    
+    -- Affichage des points de prestige disponibles
+    local pointsText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    pointsText:SetPoint("TOP", 0, -55)
+    pointsText:SetTextColor(0, 1, 0)
+    frame.pointsText = pointsText
+    
+    -- Texte explicatif
+    local infoText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    infoText:SetPoint("TOP", 0, -85)
+    infoText:SetText("|cff888888Ameliorations permanentes|r")
+    infoText:SetTextColor(0.7, 0.7, 0.7)
+    
+    -- ScrollFrame pour la liste des upgrades
+    local scrollFrame = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", 20, -110)
+    scrollFrame:SetPoint("BOTTOMRIGHT", -40, 20)
+    
+    local scrollChild = CreateFrame("Frame", nil, scrollFrame)
+    scrollChild:SetSize(440, 1)
+    scrollFrame:SetScrollChild(scrollChild)
+    
+    frame.scrollChild = scrollChild
+    frame.shopButtons = {}
+    
+    self.prestigeShopFrame = frame
+end
+
+-- Mettre à jour la boutique prestige
+function GoldClicker:UpdatePrestigeShop()
+    if not self.prestigeShopFrame then return end
+    
+    -- Mettre à jour les points disponibles
+    local points = GoldClickerDB.prestigePoints or 0
+    self.prestigeShopFrame.pointsText:SetText(
+        "|cff00ff00Points disponibles: " .. points .. "|r"
+    )
+    
+    -- Créer les boutons d'upgrades si pas encore fait
+    if #self.prestigeShopFrame.shopButtons == 0 then
+        local yOffset = 0
+        
+        for i, upgrade in ipairs(self.PrestigeUpgrades) do
+            local btn = CreateFrame("Button", nil, self.prestigeShopFrame.scrollChild)
+            btn:SetSize(440, 70)
+            btn:SetPoint("TOPLEFT", 10, -yOffset)
+            
+            local bg = btn:CreateTexture(nil, "BACKGROUND")
+            bg:SetAllPoints()
+            bg:SetColorTexture(0.1, 0.1, 0.1, 0.5)
+            btn.bg = bg
+            
+            local icon = btn:CreateTexture(nil, "ARTWORK")
+            icon:SetSize(50, 50)
+            icon:SetPoint("LEFT", 10, 0)
+            icon:SetTexture(upgrade.icon)
+            btn.icon = icon
+            
+            local nameText = btn:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+            nameText:SetPoint("TOPLEFT", icon, "TOPRIGHT", 10, -5)
+            nameText:SetText(upgrade.name)
+            nameText:SetTextColor(1, 0.82, 0)
+            btn.nameText = nameText
+            
+            local descText = btn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            descText:SetPoint("TOPLEFT", nameText, "BOTTOMLEFT", 0, -3)
+            descText:SetPoint("RIGHT", -120, 0)
+            descText:SetText(upgrade.description)
+            descText:SetTextColor(0.8, 0.8, 0.8)
+            descText:SetJustifyH("LEFT")
+            btn.descText = descText
+            
+            local levelText = btn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            levelText:SetPoint("BOTTOMRIGHT", -10, 5)
+            btn.levelText = levelText
+            
+            local costText = btn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            costText:SetPoint("TOPRIGHT", -10, -5)
+            btn.costText = costText
+            
+            btn:SetScript("OnClick", function()
+                self:BuyPrestigeUpgrade(upgrade.id)
+            end)
+            
+            btn:SetScript("OnEnter", function()
+                GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
+                GameTooltip:SetText(upgrade.name, 1, 0.82, 0)
+                GameTooltip:AddLine(upgrade.description, 1, 1, 1, true)
+                GameTooltip:AddLine(" ")
+                GameTooltip:AddLine("Cout: " .. upgrade.cost .. " points", 1, 1, 0)
+                
+                local currentLevel = self:GetPrestigeUpgradeLevel(upgrade.id)
+                if upgrade.maxPurchases then
+                    GameTooltip:AddLine("Niveau: " .. currentLevel .. " / " .. upgrade.maxPurchases, 0.8, 0.8, 0.8)
+                else
+                    GameTooltip:AddLine("Niveau: " .. currentLevel, 0.8, 0.8, 0.8)
+                end
+                
+                GameTooltip:Show()
+            end)
+            
+            btn:SetScript("OnLeave", function()
+                GameTooltip:Hide()
+            end)
+            
+            btn.upgradeId = upgrade.id
+            table.insert(self.prestigeShopFrame.shopButtons, btn)
+            
+            yOffset = yOffset + 80
+        end
+        
+        self.prestigeShopFrame.scrollChild:SetHeight(yOffset)
+    end
+    
+    -- Mettre à jour chaque bouton
+    for i, btn in ipairs(self.prestigeShopFrame.shopButtons) do
+        local upgrade = self.PrestigeUpgrades[i]
+        local currentLevel = self:GetPrestigeUpgradeLevel(upgrade.id)
+        local canBuy = points >= upgrade.cost
+        local maxReached = upgrade.maxPurchases and currentLevel >= upgrade.maxPurchases
+        
+        -- Niveau
+        if upgrade.maxPurchases then
+            btn.levelText:SetText("Niveau: " .. currentLevel .. " / " .. upgrade.maxPurchases)
+        else
+            btn.levelText:SetText("Niveau: " .. currentLevel)
+        end
+        
+        -- Coût
+        btn.costText:SetText("Cout: " .. upgrade.cost .. " pts")
+        
+        -- Couleurs selon état
+        if maxReached then
+            btn.bg:SetColorTexture(0, 0.2, 0, 0.5)
+            btn.nameText:SetTextColor(0, 1, 0)
+            btn.costText:SetTextColor(0.5, 0.5, 0.5)
+            btn.levelText:SetTextColor(0, 1, 0)
+            btn:Disable()
+        elseif canBuy then
+            btn.bg:SetColorTexture(0.1, 0.3, 0.1, 0.5)
+            btn.nameText:SetTextColor(1, 0.82, 0)
+            btn.costText:SetTextColor(0, 1, 0)
+            btn.levelText:SetTextColor(0.8, 0.8, 0.8)
+            btn:Enable()
+        else
+            btn.bg:SetColorTexture(0.1, 0.1, 0.1, 0.5)
+            btn.nameText:SetTextColor(0.5, 0.5, 0.5)
+            btn.costText:SetTextColor(1, 0, 0)
+            btn.levelText:SetTextColor(0.5, 0.5, 0.5)
+            btn:Disable()
+        end
     end
 end
