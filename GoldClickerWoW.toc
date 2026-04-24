@@ -2,7 +2,7 @@
 ## Title: Gold Clicker WoW
 ## Notes: Idle clicker game dans WoW !
 ## Author: Daeler
-## Version: 1.0
+## Version: 1.0.1
 ## SavedVariables: GoldClickerDB
 
 Core.lua

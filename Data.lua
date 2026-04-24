@@ -340,14 +340,15 @@ GoldClicker.Upgrades = {
         icon = "Interface\\Icons\\Spell_Holy_GreaterBlessingofKings",
     },
     {
-        id = "production_multiplier",
-        name = "Appel du Trésor",
-        description = "Double la production de TOUS les employés",
-        baseCost = 1000000,
-        costMultiplier = 2,
-        productionMultiplier = 2,
-        icon = "Interface\\Icons\\Spell_Shadow_RainOfFire",
-    },
+    id = "production_multiplier",
+    name = "Appel du Trésor",
+    description = "Double la production de TOUS les employés",
+    baseCost = 1000000,
+    costMultiplier = 20,
+    maxPurchases = 5,
+    productionMultiplier = 2,
+    icon = "Interface\\Icons\\Spell_Shadow_RainOfFire",
+},
     
     -- Bonus loot chance
     {
